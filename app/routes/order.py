@@ -35,7 +35,7 @@ def serialize_order(order: dict) -> dict:
 def generate_unique_order_id() -> str:
     """Generate Order_XXXXXXXXXX — retries until unique."""
     while True:
-        digits   = ''.join([str(random.randint(0, 9)) for _ in range(10)])
+        digits   = ''.join([str(random.randint(0, 9)) for _ in range(6)])
         order_id = f"Order_{digits}"
         if mongo.db["Orders"].count_documents({"orderId": order_id}) == 0:
             return order_id
