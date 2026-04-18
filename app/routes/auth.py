@@ -50,7 +50,7 @@ def _build_auth_response(user: User) -> dict:
 
 
 @auth_bp.route("/register", methods=["POST"])
-@limiter.limit("1000 per hour")
+@limiter.limit("100 per hour")
 def register():
     try:
         data = RegisterSchema().load(request.get_json(silent=True) or {})
@@ -167,3 +167,40 @@ def get_me():
 @jwt_required()
 def logout():
     return jsonify({"message": "Logged out successfully."}), 200
+
+@auth_bp.route("/change-password", methods=["POST"])
+@jwt_required()
+@limiter.limit("10 per hour")
+def change_password():
+    """Change password for the currently authenticated user."""
+    data = request.get_json(silent=True) or {}
+ 
+    current_password = data.get("current_password", "").strip()
+    new_password_raw = data.get("new_password", "").strip()
+ 
+    if not current_password or not new_password_raw:
+        return jsonify({"message": "Both current and new password are required."}), 422
+ 
+    if not PASSWORD_PATTERN.match(new_password_raw):
+        return jsonify({
+            "message": "New password must be 8-128 characters with at least one uppercase, lowercase, and digit."
+        }), 422
+ 
+    user_id  = get_jwt_identity()
+    doc      = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+ 
+    if not doc:
+        return jsonify({"message": "User not found."}), 404
+ 
+    user = User(doc)
+ 
+    if not user.verify_password(current_password):
+        return jsonify({"message": "Current password is incorrect."}), 410
+ 
+    new_hash = User.hash_password(new_password_raw)
+    mongo.db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"password_hash": new_hash}}
+    )
+ 
+    return jsonify({"message": "Password changed successfully."}), 200

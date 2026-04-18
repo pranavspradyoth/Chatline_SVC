@@ -49,9 +49,11 @@ def create_app(config_name: str = "development") -> Flask:
     from .routes.auth import auth_bp
     from .routes.menu import menu_bp
     from .routes.order import orders_bp
+    from .routes.order_history import order_history_bp
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(menu_bp, url_prefix="/api")
     app.register_blueprint(orders_bp, url_prefix="/api")
+    app.register_blueprint(order_history_bp, url_prefix="/api")
 
     # Create MongoDB indexes on startup
     with app.app_context():
